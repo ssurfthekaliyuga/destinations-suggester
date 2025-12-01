@@ -69,5 +69,5 @@ func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask
 		})
 	}
 
-	c.suggestionsRepo.ClaimLastTask(ctx, task.UserID)
+	return nil
 }
