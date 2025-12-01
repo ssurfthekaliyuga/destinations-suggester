@@ -2,13 +2,13 @@ package consumers
 
 import (
 	"context"
-	"destinations-suggester/internal/domain/models/rides"
+	"destinations-suggester/internal/domain/models/places"
 	"encoding/json"
 	"github.com/segmentio/kafka-go"
 )
 
 type rideEventsHandler interface {
-	Handle(ctx context.Context, event *rides.Event) error
+	Handle(ctx context.Context, event *places.Ride) error
 }
 
 type RideEvents struct {
@@ -43,7 +43,7 @@ func (c *RideEvents) StartConsuming(ctx context.Context) error { // todo add val
 			continue
 		}
 
-		var event rides.Event
+		var event places.Ride
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			c.errors.Handle(ctx, "cannot unmarshal ride event", err)
 			continue

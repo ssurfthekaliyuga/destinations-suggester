@@ -3,8 +3,10 @@ package suggestions
 import (
 	"context"
 	"destinations-suggester/internal/domain/models/suggestions"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"time"
 )
 
 type errorsHandler interface {
@@ -12,12 +14,13 @@ type errorsHandler interface {
 }
 
 type userPlacesQuery interface {
-	ListStats(ctx context.Context, query *suggestions.UserStatsQuery) ([]suggestions.UserStat, error)
+	ListStats(ctx context.Context, query *suggestions.UserStatsQuery) ([]suggestions.UserPlaceStat, error)
 }
 
 type suggestionsRepo interface {
-	ClaimLastTask(ctx context.Context, userID uuid.UUID) error
-	Save(ctx context.Context, userID uuid.UUID, suggestions []suggestions.UserStat) error
+	Save(ctx context.Context, userID uuid.UUID, suggestions []suggestions.Suggestion) error
+	CreateCalculateTask(ctx context.Context, userID uuid.UUID) error
+	ClaimLastCalculateTask(ctx context.Context) (*suggestions.CalculateTask, error)
 }
 
 type Calculator struct {
@@ -41,7 +44,11 @@ func NewCalculator(
 	}
 }
 
-func (c *Calculator) DoTasks(ctx context.Context) error {
+func (c *Calculator) Calculate(ctx context.Context, userID uuid.UUID) error {
+	return c.suggestionsRepo.CreateCalculateTask(ctx, userID)
+}
+
+func (c *Calculator) StartDoingTasks(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -49,6 +56,18 @@ func (c *Calculator) DoTasks(ctx context.Context) error {
 		default:
 		}
 
+		task, err := c.suggestionsRepo.ClaimLastCalculateTask(ctx)
+		if err != nil {
+			if !errors.Is(err, suggestions.ErrNoTasks) {
+				c.errorsHandler.Handle(ctx, "cannot claim last calculate task", err)
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(c.conf.NoTasksDelay):
+				continue
+			}
+		}
 	}
 }
 
@@ -63,11 +82,22 @@ func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask
 
 	suggestionsSlice := make([]suggestions.Suggestion, 0, len(stats))
 	for _, stat := range stats {
-		suggestionsSlice = append(suggestionsSlice, suggestions.Suggestion{
-			Place: stat.Place,
-			Score: 0,
-		})
+		suggestion := stat.CalculateSuggestion(&c.conf.Params)
+		suggestionsSlice = append(suggestionsSlice, *suggestion)
+	}
+
+	if err := c.suggestionsRepo.Save(ctx, task.UserID, suggestionsSlice); err != nil {
+		return fmt.Errorf("cannot save suggestions: %w", err)
 	}
 
 	return nil
+}
+
+func (c *Calculator) wait(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(c.conf.NoTasksDelay):
+		return
+	}
 }
