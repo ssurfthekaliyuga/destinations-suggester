@@ -95,7 +95,7 @@ func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask
 	}
 
 	updateFn := func(ctx context.Context, existing *suggestions.CalculateTask) *suggestions.CalculateTask {
-		if existing.CreatedAt.After(task.CreatedAt) {
+		if existing.CreatedAt.Before(task.CreatedAt) {
 			return existing
 		}
 
