@@ -2,6 +2,7 @@ package suggestions
 
 import (
 	"context"
+	"destinations-suggester/internal/domain/models/places"
 	"destinations-suggester/internal/domain/models/suggestions"
 	"errors"
 	"fmt"
@@ -12,8 +13,8 @@ type errorsHandler interface {
 	Handle(ctx context.Context, msg string, err error)
 }
 
-type userPlacesQuery interface {
-	ListStats(ctx context.Context, query *suggestions.UserPlacesStatsQuery) ([]suggestions.UserPlaceStat, error)
+type placesQuery interface {
+	ListUserStats(ctx context.Context, query *places.UserStatsQuery) ([]places.UserStat, error)
 }
 
 type suggestionsRepo interface {
@@ -25,14 +26,14 @@ type suggestionsRepo interface {
 
 type Calculator struct {
 	conf            *CalculatorConfig
-	userPlacesQuery userPlacesQuery
+	userPlacesQuery placesQuery
 	suggestionsRepo suggestionsRepo
 	errorsHandler   errorsHandler
 }
 
 func NewCalculator(
 	conf *CalculatorConfig,
-	userPlacesQuery userPlacesQuery,
+	userPlacesQuery placesQuery,
 	suggestionsRepo suggestionsRepo,
 	errorsHandler errorsHandler,
 ) *Calculator {
@@ -73,7 +74,7 @@ func (c *Calculator) StartDoingTasks(ctx context.Context) error {
 }
 
 func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask) error {
-	stats, err := c.userPlacesQuery.ListStats(ctx, &suggestions.UserPlacesStatsQuery{
+	stats, err := c.userPlacesQuery.ListUserStats(ctx, &places.UserStatsQuery{
 		UserID: task.UserID,
 		Limit:  c.conf.UserPlacesLimit,
 	})
@@ -83,8 +84,10 @@ func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask
 
 	suggestionsSlice := make([]suggestions.Suggestion, 0, len(stats))
 	for _, stat := range stats {
-		suggestion := stat.CalculateSuggestion(&c.conf.Params)
-		suggestionsSlice = append(suggestionsSlice, *suggestion)
+		suggestionsSlice = append(suggestionsSlice, suggestions.Suggestion{
+			Place: stat.Place,
+			Score: stat.Score(&c.conf.Params),
+		})
 	}
 
 	if err := c.suggestionsRepo.Save(ctx, task.UserID, suggestionsSlice); err != nil {

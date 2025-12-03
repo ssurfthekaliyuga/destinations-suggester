@@ -1,10 +1,10 @@
-package suggestions
+package places
 
 import (
 	"time"
 )
 
-type CalculateParams struct {
+type CalculateScoreParams struct {
 	TimeDecayRate     float64
 	Now               time.Time
 	FreshSearchWindow time.Duration

@@ -1,26 +1,25 @@
-package suggestions
+package places
 
 import (
-	"destinations-suggester/internal/domain/models/places"
 	"github.com/google/uuid"
 	"math"
 	"time"
 )
 
-type UserPlacesStatsQuery struct {
+type UserStatsQuery struct {
 	UserID uuid.UUID
 	Limit  int
 }
 
-type UserPlaceStat struct {
-	Place     places.Place
+type UserStat struct {
+	Place     Place
 	UserID    uuid.UUID
 	RidesFrom []time.Time
 	RidesTo   []time.Time
 	Searches  []time.Time
 }
 
-func (s *UserPlaceStat) CalculateSuggestion(p *CalculateParams) *Suggestion {
+func (s *UserStat) Score(p *CalculateScoreParams) float64 {
 	var score float64
 	for _, rideFromTime := range s.RidesFrom {
 		score += math.Exp(-p.TimeDecayRate * p.Now.Sub(rideFromTime).Seconds())
@@ -37,8 +36,5 @@ func (s *UserPlaceStat) CalculateSuggestion(p *CalculateParams) *Suggestion {
 		}
 	}
 
-	return &Suggestion{
-		Place: s.Place,
-		Score: score,
-	}
+	return score
 }
