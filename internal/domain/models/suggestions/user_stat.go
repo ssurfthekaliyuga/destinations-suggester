@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type UserStatsQuery struct {
+type UserPlacesStatsQuery struct {
 	UserID uuid.UUID
 	Limit  int
 }

@@ -19,7 +19,6 @@ type CalculateTask struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID
 	Status    CalculateTaskStatus
-	ErrorText string
 	CreatedAt time.Time
 }
 
