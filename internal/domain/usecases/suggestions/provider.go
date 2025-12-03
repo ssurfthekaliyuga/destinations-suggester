@@ -8,18 +8,18 @@ import (
 	"github.com/google/uuid"
 )
 
-type suggestionsQuery interface {
+type suggestionsLister interface {
 	List(ctx context.Context, query *suggestions.Query) ([]suggestions.Suggestion, error)
 }
 
 type Provider struct {
 	conf             *ProviderConfig
-	suggestionsQuery suggestionsQuery
+	suggestionsQuery suggestionsLister
 }
 
 func NewProvider(
 	conf *ProviderConfig,
-	suggestionsQuery suggestionsQuery,
+	suggestionsQuery suggestionsLister,
 ) (*Provider, error) {
 	return &Provider{
 		conf:             conf,

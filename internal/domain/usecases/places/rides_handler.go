@@ -7,7 +7,7 @@ import (
 )
 
 type ridesSaver interface {
-	Save(ctx context.Context, ride *places.Ride) error
+	SaveRide(ctx context.Context, ride *places.Ride) error
 }
 
 type RideEventsHandler struct {
@@ -26,7 +26,7 @@ func NewRideEventsHandler(
 }
 
 func (h *RideEventsHandler) Handle(ctx context.Context, ride *places.Ride) error {
-	if err := h.ridesSaver.Save(ctx, ride); err != nil {
+	if err := h.ridesSaver.SaveRide(ctx, ride); err != nil {
 		return fmt.Errorf("cannot save ride event: %w", err)
 	}
 	if err := h.suggestionsCalculator.Calculate(ctx, ride.UserID); err != nil {

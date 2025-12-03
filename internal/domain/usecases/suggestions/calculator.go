@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type errorsHandler interface {
+type errorsHandler interface { // todo there is double
 	Handle(ctx context.Context, msg string, err error)
 }
 
-type placesQuery interface {
+type userPlacesLister interface {
 	ListUserStats(ctx context.Context, query *places.UserStatsQuery) ([]places.UserStat, error)
 }
 
@@ -25,23 +25,23 @@ type suggestionsRepo interface {
 }
 
 type Calculator struct {
-	conf            *CalculatorConfig
-	userPlacesQuery placesQuery
-	suggestionsRepo suggestionsRepo
-	errorsHandler   errorsHandler
+	conf             *CalculatorConfig
+	userPlacesLister userPlacesLister
+	suggestionsRepo  suggestionsRepo
+	errorsHandler    errorsHandler
 }
 
 func NewCalculator(
 	conf *CalculatorConfig,
-	userPlacesQuery placesQuery,
+	userPlacesLister userPlacesLister,
 	suggestionsRepo suggestionsRepo,
 	errorsHandler errorsHandler,
 ) *Calculator {
 	return &Calculator{
-		conf:            conf,
-		userPlacesQuery: userPlacesQuery,
-		suggestionsRepo: suggestionsRepo,
-		errorsHandler:   errorsHandler,
+		conf:             conf,
+		userPlacesLister: userPlacesLister,
+		suggestionsRepo:  suggestionsRepo,
+		errorsHandler:    errorsHandler,
 	}
 }
 
@@ -74,7 +74,7 @@ func (c *Calculator) StartDoingTasks(ctx context.Context) error {
 }
 
 func (c *Calculator) doTask(ctx context.Context, task *suggestions.CalculateTask) error {
-	stats, err := c.userPlacesQuery.ListUserStats(ctx, &places.UserStatsQuery{
+	stats, err := c.userPlacesLister.ListUserStats(ctx, &places.UserStatsQuery{
 		UserID: task.UserID,
 		Limit:  c.conf.UserPlacesLimit,
 	})

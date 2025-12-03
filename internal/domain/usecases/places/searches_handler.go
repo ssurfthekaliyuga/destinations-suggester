@@ -7,7 +7,7 @@ import (
 )
 
 type searchesSaver interface {
-	Save(ctx context.Context, search *places.Search) error
+	SaveSearch(ctx context.Context, search *places.Search) error
 }
 
 type SearchEventsHandler struct {
@@ -26,7 +26,7 @@ func NewSearchEventsHandler(
 }
 
 func (h *SearchEventsHandler) Handle(ctx context.Context, search *places.Search) error {
-	if err := h.searchesSaver.Save(ctx, search); err != nil {
+	if err := h.searchesSaver.SaveSearch(ctx, search); err != nil {
 		return fmt.Errorf("cannot save search event: %w", err)
 	}
 	if err := h.suggestionsCalculator.Calculate(ctx, search.UserID); err != nil {
