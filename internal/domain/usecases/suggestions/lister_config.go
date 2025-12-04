@@ -1,6 +1,6 @@
 package suggestions
 
-type ProviderConfig struct {
+type ListerConfig struct {
 	ExcludeCurrentLocationRadius int
 	Limit                        int
 }

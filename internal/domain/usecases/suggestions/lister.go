@@ -12,31 +12,31 @@ type suggestionsLister interface {
 	List(ctx context.Context, query *suggestions.Query) ([]suggestions.Suggestion, error)
 }
 
-type Provider struct {
-	conf             *ProviderConfig
+type Lister struct {
+	conf             *ListerConfig
 	suggestionsQuery suggestionsLister
 }
 
-func NewProvider(
-	conf *ProviderConfig,
+func NewLister(
+	conf *ListerConfig,
 	suggestionsQuery suggestionsLister,
-) (*Provider, error) {
-	return &Provider{
+) (*Lister, error) {
+	return &Lister{
 		conf:             conf,
 		suggestionsQuery: suggestionsQuery,
 	}, nil
 }
 
-func (p *Provider) List(ctx context.Context, userID uuid.UUID, userLocations places.Coordinates) ([]suggestions.Suggestion, error) {
-	res, err := p.suggestionsQuery.List(ctx, &suggestions.Query{
+func (p *Lister) List(ctx context.Context, userID uuid.UUID, userLocations places.Coordinates) ([]suggestions.Suggestion, error) {
+	suggestionsSlice, err := p.suggestionsQuery.List(ctx, &suggestions.Query{
 		UserID:                       userID,
 		UserCurrentLocation:          userLocations,
 		ExcludeCurrentLocationRadius: p.conf.ExcludeCurrentLocationRadius,
 		Limit:                        p.conf.Limit,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("cannot list user places suggestions: %w", err)
+		return nil, fmt.Errorf("cannot list user places suggestionsSlice: %w", err)
 	}
 
-	return res, nil
+	return suggestionsSlice, nil
 }
