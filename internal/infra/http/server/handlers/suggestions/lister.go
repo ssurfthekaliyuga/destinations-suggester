@@ -35,6 +35,10 @@ func NewLister(suggestionsLister suggestionsLister) *Lister {
 	}
 }
 
+func (h *Lister) Register(e *echo.Echo) {
+	e.GET("/suggestions", h.List)
+}
+
 func (h *Lister) List(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -59,8 +63,4 @@ func (h *Lister) List(c echo.Context) error {
 	return c.JSON(http.StatusOK, ListResponse{
 		Suggestions: converted,
 	})
-}
-
-func (h *Lister) Register(e *echo.Echo) {
-	e.GET("/suggestions", h.List)
 }
