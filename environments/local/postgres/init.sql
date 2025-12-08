@@ -1,0 +1,2 @@
+CREATE EXTENSION pg_partman;
+CREATE EXTENSION postgis;
