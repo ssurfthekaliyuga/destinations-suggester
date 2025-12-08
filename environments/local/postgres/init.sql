@@ -1,2 +1,1 @@
-CREATE EXTENSION pg_partman;
-CREATE EXTENSION postgis;
+CREATE EXTENSION pg_partman SCHEMA partman;
