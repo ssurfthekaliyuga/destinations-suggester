@@ -27,10 +27,10 @@ func NewLister(
 	}, nil
 }
 
-func (p *Lister) List(ctx context.Context, userID uuid.UUID, userLocations places.Coordinates) ([]suggestions.Suggestion, error) {
+func (p *Lister) List(ctx context.Context, userID uuid.UUID, userLocation places.Coordinates) ([]suggestions.Suggestion, error) {
 	suggestionsSlice, err := p.suggestionsQuery.List(ctx, &suggestions.Query{
 		UserID:                       userID,
-		UserCurrentLocation:          userLocations,
+		UserCurrentLocation:          userLocation,
 		ExcludeCurrentLocationRadius: p.conf.ExcludeCurrentLocationRadius,
 		Limit:                        p.conf.Limit,
 	})

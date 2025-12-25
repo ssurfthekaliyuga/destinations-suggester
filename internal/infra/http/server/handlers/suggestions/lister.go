@@ -12,9 +12,9 @@ import (
 )
 
 type ListQueryParams struct {
-	Lat    float64   `query:"lat"`
-	Lon    float64   `query:"lon"`
-	UserID uuid.UUID `query:"userId"`
+	UserLat float64   `query:"userLat"`
+	UserLon float64   `query:"userLon"`
+	UserID  uuid.UUID `query:"userId"`
 }
 
 type ListResponse struct {
@@ -48,8 +48,8 @@ func (h *Lister) List(c echo.Context) error {
 	}
 
 	suggestionsSlice, err := h.suggestionsLister.List(ctx, params.UserID, places.Coordinates{
-		Lat: params.Lat,
-		Lon: params.Lon,
+		Lat: params.UserLat,
+		Lon: params.UserLon,
 	})
 	if err != nil {
 		return fmt.Errorf("cannot list suggestions: %w", err)
