@@ -3,8 +3,10 @@ package consumers
 import (
 	"context"
 	"destinations-suggester/internal/domain/models/places"
+	"destinations-suggester/internal/pkg/sl"
 	"encoding/json"
 	"github.com/segmentio/kafka-go"
+	"log/slog"
 )
 
 type searchEventsHandler interface {
@@ -12,24 +14,23 @@ type searchEventsHandler interface {
 }
 
 type SearchEvents struct {
+	logger *slog.Logger
 	reader *kafka.Reader
 	events searchEventsHandler
-	errors errorsHandler
 }
 
 func NewSearchEvents(
 	reader *kafka.Reader,
 	eventsHandler searchEventsHandler,
-	errorsHandler errorsHandler,
 ) *SearchEvents {
 	return &SearchEvents{
+		logger: sl.WithComponent("kafka.consumers.SearchEvents"),
 		reader: reader,
 		events: eventsHandler,
-		errors: errorsHandler,
 	}
 }
 
-func (c *SearchEvents) StartConsuming(ctx context.Context) error { // todo add validation and dead letter queue
+func (c *SearchEvents) Start(ctx context.Context) error { // todo add validation and dead letter queue
 	for {
 		select {
 		case <-ctx.Done():
@@ -39,28 +40,34 @@ func (c *SearchEvents) StartConsuming(ctx context.Context) error { // todo add v
 
 		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
-			c.errors.Handle(ctx, "cannot fetch message", err)
+			c.logger.Error("cannot fetch message", sl.Error(err))
 			continue
 		}
 
+		logger := c.logger.With(
+			slog.String("key", string(msg.Key)),
+			slog.Int("partition", msg.Partition),
+			slog.Int64("offset", msg.Offset),
+		)
+
 		var event places.Search
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			c.errors.Handle(ctx, "cannot unmarshal search event", err)
+			logger.Error("cannot unmarshal search event", sl.Error(err))
 			continue
 		}
 
 		if err := c.events.Handle(ctx, &event); err != nil {
-			c.errors.Handle(ctx, "cannot handle search event", err)
+			logger.Error("cannot handle search event", sl.Error(err))
 			continue
 		}
 
 		if err := c.reader.CommitMessages(ctx, msg); err != nil {
-			c.errors.Handle(ctx, "cannot commit message", err)
+			logger.Error("cannot commit message", sl.Error(err))
 			continue
 		}
 	}
 }
 
-func (c *SearchEvents) Close() error {
+func (c *SearchEvents) Stop(_ context.Context) error {
 	return c.reader.Close()
 }

@@ -2,25 +2,31 @@ package server
 
 import (
 	"context"
+	"destinations-suggester/internal/pkg/sl"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"log/slog"
 	"net"
 	"net/http"
 )
 
 type Server struct {
-	srv  *echo.Echo
-	conf *Config
+	logger *slog.Logger
+	srv    *echo.Echo
+	cancel context.CancelCauseFunc
+	conf   *Config
 }
 
-func New(srv *echo.Echo, conf *Config) *Server {
+func New(srv *echo.Echo, cancel context.CancelCauseFunc, conf *Config) *Server {
 	return &Server{
-		srv:  srv,
-		conf: conf,
+		logger: sl.WithComponent("http.server.Server"),
+		srv:    srv,
+		cancel: cancel,
+		conf:   conf,
 	}
 }
 
-func (s *Server) Start(_ context.Context, errsCh chan<- error) {
+func (s *Server) Start(_ context.Context) error {
 	go func() {
 		err := s.srv.StartServer(&http.Server{
 			Addr:              net.JoinHostPort(s.conf.Host, s.conf.Port),
@@ -31,9 +37,17 @@ func (s *Server) Start(_ context.Context, errsCh chan<- error) {
 			MaxHeaderBytes:    s.conf.MaxHeaderBytes,
 		})
 		if err != nil {
-			errsCh <- fmt.Errorf("cannot start echo server: %w", err)
+			s.logger.Error("cannot start http server", sl.Error(err))
+			s.cancel(err)
 		}
+
+		s.logger.Info("http server started",
+			slog.Any("host", s.conf.Host),
+			slog.Any("port", s.conf.Port),
+		)
 	}()
+
+	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error {
