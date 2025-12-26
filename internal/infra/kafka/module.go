@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"destinations-suggester/internal/infra/kafka/consumers"
-	"destinations-suggester/internal/pkg/fxutils"
 	"go.uber.org/fx"
 )
 
@@ -12,7 +11,17 @@ var Module = fx.Module("kafka",
 		consumers.NewSearchEvents,
 	),
 	fx.Invoke(
-		fxutils.Append[*consumers.RideEvents](),
-		fxutils.Append[*consumers.SearchEvents](),
+		func(lc fx.Lifecycle, events *consumers.RideEvents) {
+			lc.Append(fx.Hook{
+				OnStart: events.Start,
+				OnStop:  events.Stop,
+			})
+		},
+		func(lc fx.Lifecycle, events *consumers.SearchEvents) {
+			lc.Append(fx.Hook{
+				OnStart: events.Start,
+				OnStop:  events.Stop,
+			})
+		},
 	),
 )

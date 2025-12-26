@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"destinations-suggester/internal/infra/http/server/handlers/suggestions"
-	"destinations-suggester/internal/pkg/fxutils"
 	"destinations-suggester/internal/pkg/sl"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -18,7 +17,9 @@ var Module = fx.Module("http.server",
 		suggestions.NewLister,
 	),
 	fx.Invoke(
-		fxutils.Register[*suggestions.Lister](),
+		func(e *echo.Echo, lister *suggestions.Lister) {
+			lister.Register(e)
+		},
 	),
 	fx.Invoke(
 		func(lc fx.Lifecycle, sh fx.Shutdowner, srv *Server) {
